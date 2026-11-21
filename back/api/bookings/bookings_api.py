@@ -1,7 +1,5 @@
-import time
-import hashlib
-import string
-import random
+import hmac
+import secrets
 from datetime import date
 from flask import jsonify, Blueprint, request
 
@@ -86,12 +84,9 @@ def new_booking():
     # Determine the booking total price
     booking_price = room.price * booking_duration_in_days
 
-    # Generate random booking reference
-    booking_reference = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
-
-    # Generate random confirmation secret
-    random_string = str(int(time.time()))
-    checkout_confirmation_secret = hashlib.sha512(random_string.encode('utf-8')).hexdigest()
+    # D4 fix: generate unpredictable cryptographic booking values.
+    booking_reference = secrets.token_urlsafe(9)
+    checkout_confirmation_secret = secrets.token_urlsafe(32)
 
     # Create Stripe checkout session
     checkout_session = create_checkout(
@@ -134,7 +129,8 @@ def confirm_booking_checkout(reference: str):
     if not booking:
         return {'error': 'Booking not found'}, 404
     
-    if booking.checkout_confirmation_secret != request.json["confirmationSecret"]:
+    provided_secret = request.json.get("confirmationSecret", "") if request.json else ""
+    if not hmac.compare_digest(booking.checkout_confirmation_secret, provided_secret):
         return {'error': 'Invalid confirmation secret'}, 422
 
     booking.is_paid = True
