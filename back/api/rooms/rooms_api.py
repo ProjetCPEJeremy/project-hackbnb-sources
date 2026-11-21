@@ -36,6 +36,8 @@ def get_room_details(room_id: str):
    return jsonify(room.to_dict())
 
 
-@rooms_api.route('/<room_id>/picture')
-def send_report(room_id: str):
-   return send_from_directory('pictures', room_id + ".jpg")
+@rooms_api.route('/<int:room_id>/picture')
+def send_report(room_id: int):
+   # D2 fix: `room_id` is constrained to an integer by the route converter,
+   # which removes any path-traversal vector on this endpoint.
+   return send_from_directory('pictures', f"{room_id}.jpg")
