@@ -1,4 +1,5 @@
 from typing import List
+import bleach
 from database.init import db
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -28,7 +29,12 @@ class Room(db.Model):
             "price": self.price,
             "picture": self.picture,
             "category": self.category,
-            "description": self.description,
+            "description": bleach.clean(
+                self.description or "",
+                tags=['p', 'em', 'strong', 'br', 'ul', 'ol', 'li', 'b', 'i'],
+                attributes={},
+                strip=True,
+            ),
         }
 
         if self.host_user:

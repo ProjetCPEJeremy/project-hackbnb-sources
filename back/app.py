@@ -33,14 +33,30 @@ app.register_blueprint(bookings_api, url_prefix='/bookings')
 app.register_blueprint(uploads_api, url_prefix='/uploads')
 
 
+@app.after_request
+def set_security_headers(response):
+   # D7 fix: add security headers that mitigate XSS, clickjacking and MIME
+   # sniffing. The API only returns JSON/images, so a very strict CSP is safe.
+   response.headers['Content-Security-Policy'] = "default-src 'none'; frame-ancestors 'none'"
+   response.headers['X-Content-Type-Options'] = 'nosniff'
+   response.headers['X-Frame-Options'] = 'DENY'
+   response.headers['Referrer-Policy'] = 'no-referrer'
+   response.headers['Cross-Origin-Resource-Policy'] = 'same-site'
+   response.headers['Permissions-Policy'] = 'geolocation=(), camera=(), microphone=()'
+
+   return response
+
+
 @app.route('/', methods=['GET'])
 def welcome():
    return "Welcome on API"
 
 
 if __name__ == '__main__':
+   # Never enable the Werkzeug debugger in production: it exposes an
+   # interactive console (RCE) and leaks stack traces / source code.
    app.run(
-      debug=True,
+      debug=False,
       host="0.0.0.0",
       port=9001,
    )
