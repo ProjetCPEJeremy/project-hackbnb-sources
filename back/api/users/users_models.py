@@ -1,6 +1,6 @@
 from typing import List
-from hashlib import md5
 from database.init import db
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 class User(db.Model):
@@ -16,15 +16,22 @@ class User(db.Model):
         return f'<User {self.email!r}>'
     
     def to_dict(self):
+        """Full representation, for the authenticated user themselves only."""
         return {
             "id": self.id,
             "name": self.name,
             "email": self.email,
         }
 
+    def to_public_dict(self):
+        """Public representation exposed to other users (no PII such as email)."""
+        return {
+            "id": self.id,
+            "name": self.name,
+        }
+
     def set_password(self, clear_password: str):
-        self.password_hash = md5(clear_password.encode("utf-8")).hexdigest()
-    
+        self.password_hash = generate_password_hash(clear_password)
+
     def is_valid_password(self, clear_password: str) -> bool:
-        clear_password_hash = md5(clear_password.encode("utf-8")).hexdigest()
-        return clear_password_hash == self.password_hash
+        return check_password_hash(self.password_hash, clear_password)
