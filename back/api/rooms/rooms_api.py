@@ -1,5 +1,4 @@
 from flask import jsonify, Blueprint, request, send_from_directory
-from sqlalchemy import text
 from sqlalchemy.orm import joinedload
 from .rooms_models import Room
 from database.init import db
@@ -14,8 +13,10 @@ def list_rooms():
    """
 
    if "category" in request.args:
+      # D1 fix: use a parameterized/ORM filter instead of string interpolation
+      # to prevent SQL injection on the `category` query parameter.
       category = request.args["category"]
-      rooms = Room.query.filter(text(f"category = '{category}'")).all()
+      rooms = Room.query.filter(Room.category == category).all()
    else:
       rooms = Room.query.all()
 
