@@ -44,6 +44,9 @@ def set_security_headers(response):
    response.headers['Cross-Origin-Resource-Policy'] = 'same-site'
    response.headers['Permissions-Policy'] = 'geolocation=(), camera=(), microphone=()'
 
+   # D8 fix: do not disclose the server/framework and version in responses.
+   response.headers['Server'] = 'webserver'
+   response.headers.pop('X-Powered-By', None)
    return response
 
 
