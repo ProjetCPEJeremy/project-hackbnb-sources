@@ -41,9 +41,8 @@ def get_booking_checkout_lines(reference: str):
         return {'error': 'Cannot get checkout lines without payment'}, 422
 
     try:
-        checkout_session_id = request.args.get("checkout_session_id")
-        return jsonify(get_checkout_lines(checkout_session_id))
-    except:
+        return jsonify(get_checkout_lines(booking.stripe_checkout_session_id))
+    except Exception:
         return {'error': 'Invalid checkout session ID'}, 404
 
 
@@ -91,8 +90,8 @@ def new_booking():
     booking_reference = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
 
     # Generate random confirmation secret
-    random_string = str(int(time.time())) # get current timestamp in seconds
-    checkout_confirmation_secret = hashlib.sha512(random_string.encode('utf-8')).hexdigest() # hash it with safe sha512
+    random_string = str(int(time.time()))
+    checkout_confirmation_secret = hashlib.sha512(random_string.encode('utf-8')).hexdigest()
 
     # Create Stripe checkout session
     checkout_session = create_checkout(
