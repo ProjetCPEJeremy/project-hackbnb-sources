@@ -1,6 +1,26 @@
 import os
 import re
+import decimal
 import stripe
+
+
+def _json_safe(value):
+    """Recursively turn a Stripe object/structure into JSON-serializable data.
+
+    `stripe.checkout.Session.list_line_items` returns rich `LineItem` objects
+    whose `to_dict()` can contain `Decimal` values; both are rejected by Flask's
+    `jsonify`. This normalizes everything to plain dict/list/str/number so the
+    legitimate "checkout lines" feature keeps working after the D3 fix.
+    """
+    if hasattr(value, "to_dict"):
+        value = value.to_dict()
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    if isinstance(value, decimal.Decimal):
+        return int(value) if value == value.to_integral_value() else float(value)
+    return value
 
 # A valid Stripe Checkout Session id looks like `cs_test_...` / `cs_live_...`.
 # Validating it before building the API URL prevents an attacker from turning
@@ -42,4 +62,4 @@ def get_checkout_lines(checkout_session_id):
 
     stripe.api_key = os.getenv('STRIPE_API_KEY')
     line_items = stripe.checkout.Session.list_line_items(checkout_session_id)
-    return [item for item in line_items["data"]]
+    return [_json_safe(item) for item in line_items["data"]]
